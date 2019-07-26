@@ -1,0 +1,22 @@
+create database api_test;
+
+
+
+create table persona(
+id int primary key auto_increment,
+nombres varchar(50),
+apellidoPaterno varchar(100),
+apellidoMaterno varchar(100),
+sexo varchar(20),
+direccion varchar(200),
+estadoCivil varchar(20)
+);
+
+
+select id,nombres,apellidoPaterno, apellidoMaterno, sexo, direccion, estadoCivil from persona;
+
+
+
+
+insert into persona(nombres,apellidoPaterno, apellidoMaterno, sexo, direccion, estadoCivil)
+values ("Jose Luis","Perales", "Moncada", "Masculino", "España", "Casado");

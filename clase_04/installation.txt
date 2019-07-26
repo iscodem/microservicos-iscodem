@@ -1,0 +1,138 @@
+## Pasos previos (Restaurar el repositorio de ubuntu).
+
+$ sudo -s
+# cd /etc/apt
+# cp sources.list.save sources.list
+# apt update
+# apt install jenkins
+
+### 1. Instalar jenkins
+
+# wget -q -O - https://pkg.jenkins.io/debian/jenkins-ci.org.key | sudo apt-key add -
+# sudo sh -c 'echo deb http://pkg.jenkins.io/debian-stable binary/ > /etc/apt/sources.list.d/jenkins.list'
+# sudo apt-get update
+# sudo apt-get install jenkins
+
+### Abrir el navegador "http://127.0.0.1:8080"
+### copiar la contraseña inicial con el siguiente comando
+
+# sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+
+### Crear usuario y contraseña
+
+### 2. Instalar maven
+
+# echo "export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/jre" >> ~/.bash_profile && source ~/.bash_profile
+# wget https://www-eu.apache.org/dist/maven/maven-3/3.6.1/binaries/apache-maven-3.6.1-bin.tar.gz
+# tar xvf apache-maven-3.6.1-bin.tar.gz
+# sudo mv apache-maven-3.6.1 /usr/local/apache-maven
+# echo "export M2_HOME=/usr/local/apache-maven" >> ~/.bash_profile && source ~/.bash_profile
+# echo "export M2=$M2_HOME/bin" >> ~/.bash_profile && source ~/.bash_profile
+# echo "export PATH=$M2:$PATH" >> ~/.bash_profile && source ~/.bash_profile
+
+### 3. Dar permisos a jenkins en docker
+
+# sudo usermod -a -G docker jenkins
+
+### 4. Instalar el plugin de GitLab
+
+# Ir a "http://127.0.0.1:8080/pluginManager/", e instalar el plugin de GitLab.
+
+### 5. Configurar herramientas
+
+# Ir a "http://127.0.0.1:8080/configureTools"
+# Imagen "02_agregar_tools.png"
+
+### 6. Configurar variables de entorno
+
+# Ir a "http://127.0.0.1:8080/configure", seguir el orden de las imágenes
+# Imagen "01_variables_de_entorno.png"
+# Imagen "03_configuracion_finalizada.png"
+
+### 7. Crear pipeline como se indica en las imágenes en el orden sugerido
+
+# Imagen "04_generar_pipeline.png"
+# Imagen "05_configurar_pipeline.png"
+# Imagen "06_ejecutar_pipeline.png"
+
+# Script del pipeline
+----------------------------------------------------------------------------------------------------
+node {
+    def mvnHome
+    
+    stage('Preparation') {
+        git 'https://gitlab.com/brettsacuna/ContinuousIntegrationAndContinuousDeliveryApp.git'
+        mvnHome = tool 'M2'
+    }
+    
+    stage('Test') {
+        try {
+            sh "'${mvnHome}/bin/mvn' test"
+        } catch (e) {
+            throw e
+        }
+    }
+    
+    stage('Build') {
+        try {
+            sh "'${mvnHome}/bin/mvn' clean package -DskipTests"
+        } catch (e) {
+            throw e
+        }
+    }
+    
+    stage('Results') {
+        try {
+            archive 'target/*.jar'
+        } catch (e) {
+            throw e
+        }
+    }
+    
+    stage('Deployment') {
+        try {
+            sh '/var/lib/jenkins/workspace/IntegracionContinua/runDeployment.sh'
+        } catch (e) {
+            throw e
+        }
+    }
+}
+----------------------------------------------------------------------------------------------------
+
+### 8. Crear script de despliegue
+
+# cd /var/lib/jenkins/workspace/"Nombre_pipeline"
+# sudo mkdir deployment
+# sudo vi deployment/Dockerfile
+-----------------------------------------------
+FROM java:latest
+EXPOSE 8090
+ADD app.jar testapp.jar
+ENTRYPOINT ["java","-jar","testapp.jar"]
+-----------------------------------------------
+# sudo vi runDeployment.sh
+------------------------------------------------------------------------------------------------
+#!/bin/bash -ex
+echo "Deploying app.jar to docker folder"
+packageName=`ls target/continuousintegrationandcontinuousdeliveryapp*.jar`
+versionid=`echo $packageName | awk -F "-" '{ print $2 }'`
+versionname=`echo $packageName | awk -F "-" '{ print $3 }' | awk -F "." '{ print $1 }'`
+version=`echo $versionid-$versionname`
+echo "version: $version"
+cp -r $packageName deployment/app.jar
+dockerImageName=app
+dockerpid=`docker ps -a | grep $dockerImageName | grep "Up" | awk -F " " '{ print $1 }'`
+if [[ $dockerpid != "" ]]; then
+        docker kill $dockerpid
+        docker rm $dockerpid
+fi
+docker build -t $dockerImageName deployment/.
+docker run -d -p 8090:8090 $dockerImageName
+------------------------------------------------------------------------------------------------
+# sudo chown jenkins:jenkins runDeployment.sh
+# sudo chmod 775 runDeployment.sh
+# sudo chown jenkins:jenkins -R deployment
+
+
+
+

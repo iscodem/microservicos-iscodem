@@ -1,0 +1,5 @@
+FROM openjdk:8-jdk-alpine
+EXPOSE 9000
+ADD app.jar testapp.jar
+ENTRYPOINT ["java","-jar","testapp.jar"]
+

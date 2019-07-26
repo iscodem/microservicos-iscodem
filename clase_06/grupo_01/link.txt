@@ -1,0 +1,3 @@
+https://github.com/kevindan/api-test-gradle
+
+https://gitlab.com/kevindan/api-test-gradle

@@ -1,0 +1,6 @@
+# sudo chown jenkins:jenkins runDeployment.sh
+
+# sudo chmod 775 runDeployment.sh
+
+# sudo chown jenkins:jenkins -R deployment
+

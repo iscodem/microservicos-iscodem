@@ -1,0 +1,53 @@
+node {
+    def mvnHome
+    
+    stage('Preparation') {
+        git 'https://gitlab.com/kevindan/api-test-jdbc.git'
+        notifyStarted('Ha comezado a correr la integracion')
+        mvnHome = tool 'M2'
+    }
+    
+    stage('Test') {
+        try {
+            sh "'${mvnHome}/bin/mvn' test"
+             notifyStarted('Ha comezado a corerr el testeo de la aplicacion')
+        } catch (e) {
+             notifyStarted('Ha fallado el testeo')
+            throw e
+        }
+    }
+    
+    stage('Build') {
+        try {
+            sh "'${mvnHome}/bin/mvn' clean package -DskipTests"
+             notifyStarted('Se ha compilado el proyecto')
+        } catch (e) {
+             notifyStarted('Ha fallado la compilacion del proyecto')
+            throw e
+        }
+    }
+    
+    stage('Results') {
+        try {
+            archive 'target/*.jar'
+             
+        } catch (e) {
+             
+            throw e
+        }
+    }
+    
+    stage('Deployment') {
+        try {
+            sh '/var/lib/jenkins/workspace/proyectojdbc/runDeployment.sh'
+            notifyStarted('Ha finalizado el proceso de integracion')
+        } catch (e) {
+            notifyStarted('Ha fallado el despliegue de la aplicacion')
+            throw e
+        }
+    }
+}
+
+def notifyStarted(String message) {
+  slackSend (color: '#FFFF00', message: "${message}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}] (${env.BUILD_URL})")
+}

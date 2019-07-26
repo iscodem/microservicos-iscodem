@@ -1,0 +1,40 @@
+node {
+    def mvnHome
+    
+    stage('Preparation') {
+        git 'https://gitlab.com/brettsacuna/ContinuousIntegrationAndContinuousDeliveryApp.git'
+        mvnHome = tool 'M2'
+    }
+    
+    stage('Test') {
+        try {
+            sh "'${mvnHome}/bin/mvn' test"
+        } catch (e) {
+            throw e
+        }
+    }
+    
+    stage('Build') {
+        try {
+            sh "'${mvnHome}/bin/mvn' clean package -DskipTests"
+        } catch (e) {
+            throw e
+        }
+    }
+    
+    stage('Results') {
+        try {
+            archive 'target/*.jar'
+        } catch (e) {
+            throw e
+        }
+    }
+    
+    stage('Deployment') {
+        try {
+            sh '/var/lib/jenkins/workspace/IntegracionContinua/runDeployment.sh'
+        } catch (e) {
+            throw e
+        }
+    }
+}

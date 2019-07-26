@@ -1,0 +1,7 @@
+https://github.com/kevindan/test-tomcat
+
+https://gitlab.com/kevindan/api-test-jdbc
+
+dominio de equipo: newhorizonsespacio
+canal: ejerciciointegracion
+token: n6GevXeyMSgTGpSOuqFKay9Z

@@ -1,0 +1,40 @@
+node {
+    def mvnHome
+    
+    stage('Preparation') {
+        git 'https://gitlab.com/kevindan/api-test-gradle.git'
+        gradleHome = tool 'Gradle'
+    }
+    
+    stage('Test') {
+        try {
+            sh "'${gradleHome}/bin/gradle'  clean check"
+        } catch (e) {
+            throw e
+        }
+    }
+    
+    stage('Build') {
+        try {
+            sh "'${gradleHome}/bin/gradle' clean build"
+        } catch (e) {
+            throw e
+        }
+    }
+    
+    stage('Results') {
+        try {
+            archive 'build/libs/*.jar'
+        } catch (e) {
+            throw e
+        }
+    }
+    
+    stage('Deployment') {
+        try {
+            sh '/var/lib/jenkins/workspace/IntegracionGradle/runDeployment.sh'
+        } catch (e) {
+            throw e
+        }
+    }
+}
